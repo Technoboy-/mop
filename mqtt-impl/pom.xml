@@ -27,6 +27,35 @@
     <name>StreamNative :: Pulsar Protocol Handler :: MQTT</name>
     <description>MQTT on Pulsar implemented using Pulsar Protocol Handler</description>
 
+
+    <dependencies>
+        <dependency>
+            <groupId>org.conscrypt</groupId>
+            <artifactId>conscrypt-openjdk-uber</artifactId>
+            <version>2.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.67.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.mqtt-client</groupId>
+            <artifactId>mqtt-client</artifactId>
+            <version>1.16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.mqtt-client</groupId>
+            <artifactId>mqtt-client</artifactId>
+            <version>1.16</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
+    </dependencies>
     <build>
         <plugins>
             <plugin>
