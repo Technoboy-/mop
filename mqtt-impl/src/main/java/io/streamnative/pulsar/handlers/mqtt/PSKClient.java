@@ -29,15 +29,27 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
+import io.streamnative.pulsar.handlers.mqtt.utils.Aes;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.bookkeeper.auth.ClientAuthProvider;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.conscrypt.OpenSSLProvider;
 import org.conscrypt.PSKKeyManager;
+import org.jose4j.keys.HmacKey;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLEngine;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.security.Provider;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -66,6 +78,30 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
     }
 
     private SSLEngine createSSLEngine(SocketChannel ch) throws Exception{
+
+//        addProvider();
+
+//        KeyStore keyStore = KeyStore.getInstance("IAIKKeyStore");
+//        FileInputStream fis = new FileInputStream("/Users/tboy/tboy/workspace/mop/mqtt-impl/src/main/resources/isasilk.keystore");
+//        keyStore.load(fis, "password".toCharArray());
+//
+//        fis.close();
+//
+//        SecretKey secretKey = (SecretKey)keyStore.getKey("localhost", "password".toCharArray());
+//        PSKCredential credential = new PSKCredential("localhost", new PreSharedKey(secretKey.getEncoded()));
+
+        Provider provider = new OpenSSLProvider();
+//
+//        KeyStore keyStore = KeyStore.getInstance("jks", provider);
+//
+//        SecretKeySpec var27 = new SecretKeySpec(var12, 0, 16, "AES");
+//        IvParameterSpec var13 = new IvParameterSpec(var12, 16, 16);
+//
+//        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding", provider);
+//        var10.init("AES/CBC/PKCS5Padding", 2, var27, var13, var5);
+//
+//        CipherInputStream var14 = new CipherInputStream((InputStream)var3, var10);
+
         PSKKeyManager myPskKeyManager = new PSKKeyManager() {
             @Override
             public String chooseServerKeyIdentityHint(Socket socket) {
@@ -125,14 +161,29 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
 
                     @Override
                     public byte[] getEncoded() {
-                        return BinaryCodec.fromAscii("ruckus123!".toCharArray());
+                        try {
+                            return "ruckus123!".getBytes(StandardCharsets.UTF_8);
+//                            return "7275636b757331323321".getBytes(StandardCharsets.UTF_8);
+//                            return Aes.getRawKey("7275636b757331323321");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return null;
+                        }
                     }
                 };
+//                return new HmacKey("7275636b757331323321".getBytes(StandardCharsets.UTF_8));
             }
         };
 
         List<String> protocol = new ArrayList<>();
+        protocol.add("TLSv1.3");
         protocol.add("TLSv1.2");
+        protocol.add("TLSv1.1");
+        protocol.add("TLSv1");
+        protocol.add("SSLv3");
+        protocol.add("SSLv2");
+        protocol.add("SSLv1");
+//        protocol.add("SSLV3");
         List<String> ciphers = new ArrayList<>();
         ciphers.add("PSK-AES128-CBC-SHA");
 
@@ -142,18 +193,40 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
                 ApplicationProtocolConfig.SelectedListenerFailureBehavior.FATAL_ALERT,
                 protocol);
 
-        Provider provider = new OpenSSLProvider();
         SslContext sslContext = SslContextBuilder.forClient()
+                .startTls(true)
                 .keyManager(myPskKeyManager)
                 .sslProvider(SslProvider.JDK)
                 .sslContextProvider(provider)
                 .applicationProtocolConfig(protocolConfig)
-                .protocols("TLSv1.2")
+                .protocols("TLSv1.2", "TLSv1.1", "TLSv1", "SSLv3")
+//                .protocols("SSLV3")
                 .ciphers(ciphers)
                 .build();
         SSLEngine sslEngine = sslContext.newEngine(ch.alloc());
         sslEngine.setUseClientMode(true);
         return sslEngine;
+    }
+
+    public static void addProvider() {
+        addProvider("iaik.security.provider.IAIK");
+    }
+
+    public static void addProvider(String var0) {
+        try {
+            Class var1 = Class.forName(var0);
+            Provider var2 = (Provider)var1.newInstance();
+            Security.insertProviderAt(var2, 1);
+        } catch (ClassNotFoundException var3) {
+            System.out.println("Provider IAIK not found. Add iaik_jce.jar or iaik_jce_full.jar to your classpath.");
+            System.out.println("If you are going to use a different provider please take a look at Readme.html!");
+            System.exit(0);
+        } catch (Exception var4) {
+            System.out.println("Error adding provider:");
+            var4.printStackTrace(System.err);
+            System.exit(0);
+        }
+
     }
 
     public static void main(String[] args) throws Exception{
