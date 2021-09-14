@@ -25,6 +25,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.mqtt.MqttDecoder;
 import io.netty.handler.codec.mqtt.MqttEncoder;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
+import io.netty.handler.ssl.ApplicationProtocolNames;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
@@ -33,6 +34,7 @@ import io.streamnative.pulsar.handlers.mqtt.utils.Aes;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.auth.ClientAuthProvider;
 import org.apache.commons.codec.binary.BinaryCodec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.conscrypt.OpenSSLProvider;
 import org.conscrypt.PSKKeyManager;
 import org.jose4j.keys.HmacKey;
@@ -43,6 +45,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.xml.bind.DatatypeConverter;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.Socket;
@@ -77,8 +81,9 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
         }
     }
 
-    private SSLEngine createSSLEngine(SocketChannel ch) throws Exception{
+    public static SSLEngine createSSLEngine(SocketChannel ch) throws Exception{
 
+//        Security.addProvider(new BouncyCastleProvider());
 //        addProvider();
 
 //        KeyStore keyStore = KeyStore.getInstance("IAIKKeyStore");
@@ -91,6 +96,8 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
 //        PSKCredential credential = new PSKCredential("localhost", new PreSharedKey(secretKey.getEncoded()));
 
         Provider provider = new OpenSSLProvider();
+
+//        Security.addProvider(provider);
 //
 //        KeyStore keyStore = KeyStore.getInstance("jks", provider);
 //
@@ -163,6 +170,7 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
                     public byte[] getEncoded() {
                         try {
                             return "ruckus123!".getBytes(StandardCharsets.UTF_8);
+//                            return DatatypeConverter.parseHexBinary("afcd1988");
 //                            return "7275636b757331323321".getBytes(StandardCharsets.UTF_8);
 //                            return Aes.getRawKey("7275636b757331323321");
                         } catch (Exception e) {
@@ -175,32 +183,42 @@ public class PSKClient extends ChannelInitializer<SocketChannel> {
             }
         };
 
-        List<String> protocol = new ArrayList<>();
-        protocol.add("TLSv1.3");
-        protocol.add("TLSv1.2");
-        protocol.add("TLSv1.1");
-        protocol.add("TLSv1");
-        protocol.add("SSLv3");
-        protocol.add("SSLv2");
-        protocol.add("SSLv1");
+        List<String> applicationProtocols = new ArrayList<>();
+        applicationProtocols.add(ApplicationProtocolNames.HTTP_2);
+        applicationProtocols.add(ApplicationProtocolNames.HTTP_1_1);
+        applicationProtocols.add(ApplicationProtocolNames.SPDY_1);
+        applicationProtocols.add(ApplicationProtocolNames.SPDY_2);
+        applicationProtocols.add(ApplicationProtocolNames.SPDY_3);
+        applicationProtocols.add(ApplicationProtocolNames.SPDY_3_1);
+//        protocol.add("TLSv1.3");
+//        protocol.add("TLSv1.2");
+//        protocol.add("TLSv1.1");
+//        protocol.add("SSL");
+//        protocol.add("SSLv3");
+//        protocol.add("SSLv2");
+//        protocol.add("SSLv1");
 //        protocol.add("SSLV3");
         List<String> ciphers = new ArrayList<>();
         ciphers.add("PSK-AES128-CBC-SHA");
 
         ApplicationProtocolConfig protocolConfig = new ApplicationProtocolConfig(
                 ApplicationProtocolConfig.Protocol.ALPN,
-                ApplicationProtocolConfig.SelectorFailureBehavior.FATAL_ALERT,
-                ApplicationProtocolConfig.SelectedListenerFailureBehavior.FATAL_ALERT,
-                protocol);
+                ApplicationProtocolConfig.SelectorFailureBehavior.CHOOSE_MY_LAST_PROTOCOL,
+                ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                applicationProtocols);
+
+        List<String> protocols = new ArrayList<>();
+        protocols.add("TLSv1.2");
+        protocols.add("TLSv1.1");
+        protocols.add("TLSv1");
+        protocols.add("SSLv3");
 
         SslContext sslContext = SslContextBuilder.forClient()
-                .startTls(true)
                 .keyManager(myPskKeyManager)
                 .sslProvider(SslProvider.JDK)
                 .sslContextProvider(provider)
                 .applicationProtocolConfig(protocolConfig)
-                .protocols("TLSv1.2", "TLSv1.1", "TLSv1", "SSLv3")
-//                .protocols("SSLV3")
+                .protocols(protocols)
                 .ciphers(ciphers)
                 .build();
         SSLEngine sslEngine = sslContext.newEngine(ch.alloc());

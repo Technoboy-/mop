@@ -42,6 +42,7 @@ public class MQTTChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Map<String, AuthenticationProvider> authProviders;
     private final boolean enableTls;
+    private final boolean enableTlsPsk = true;
     private final boolean tlsEnabledWithKeyStore;
     private SslContextAutoRefreshBuilder<SslContext> sslCtxRefresher;
     private NettySSLContextAutoRefreshBuilder nettySSLContextAutoRefreshBuilder;
@@ -97,6 +98,8 @@ public class MQTTChannelInitializer extends ChannelInitializer<SocketChannel> {
             } else {
                 ch.pipeline().addLast(TLS_HANDLER, sslCtxRefresher.get().newHandler(ch.alloc()));
             }
+        } else if(this.enableTlsPsk) {
+            ch.pipeline().addLast(TLS_HANDLER, new SslHandler(PSKClient.createSSLEngine(ch)));
         }
         ch.pipeline().addLast("decoder", new MqttDecoder());
         ch.pipeline().addLast("encoder", MqttEncoder.INSTANCE);

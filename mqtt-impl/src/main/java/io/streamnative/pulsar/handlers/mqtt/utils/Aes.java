@@ -1,6 +1,5 @@
 package io.streamnative.pulsar.handlers.mqtt.utils;
 
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.conscrypt.OpenSSLProvider;
 
 import javax.crypto.Cipher;
