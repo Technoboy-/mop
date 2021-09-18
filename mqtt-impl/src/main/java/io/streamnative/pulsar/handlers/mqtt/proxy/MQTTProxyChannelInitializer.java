@@ -21,6 +21,10 @@ import io.netty.handler.codec.mqtt.MqttEncoder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.streamnative.pulsar.handlers.mqtt.support.psk.PSKConfiguration;
+import io.streamnative.pulsar.handlers.mqtt.support.psk.PSKEngineFactory;
+import io.streamnative.pulsar.handlers.mqtt.support.psk.PSKSecretKey;
+import io.streamnative.pulsar.handlers.mqtt.utils.TlsPskUtils;
 import lombok.Getter;
 import org.apache.pulsar.common.util.NettyServerSslContextBuilder;
 import org.apache.pulsar.common.util.SslContextAutoRefreshBuilder;
@@ -36,6 +40,7 @@ public class MQTTProxyChannelInitializer extends ChannelInitializer<SocketChanne
     private final MQTTProxyConfiguration proxyConfig;
 
     private final boolean enableTls;
+    private final boolean enableTlsPsk = true;
     private final boolean tlsEnabledWithKeyStore;
 
     private SslContextAutoRefreshBuilder<SslContext> serverSslCtxRefresher;
@@ -81,7 +86,12 @@ public class MQTTProxyChannelInitializer extends ChannelInitializer<SocketChanne
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         ch.pipeline().addFirst("idleStateHandler", new IdleStateHandler(10, 0, 0));
-        if (this.enableTls) {
+        if (this.enableTlsPsk) {
+            PSKConfiguration pskConfiguration = new PSKConfiguration();
+            pskConfiguration.setIdentityHint("alpha");
+            pskConfiguration.setIdentityText("lbstest:ruckus123!");
+            ch.pipeline().addLast(TLS_HANDLER, new SslHandler(PSKEngineFactory.createServerEngine(ch, pskConfiguration)));
+        } else if (this.enableTls) {
             if (serverSslCtxRefresher != null) {
                 SslContext sslContext = serverSslCtxRefresher.get();
                 if (sslContext != null) {
