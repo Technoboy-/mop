@@ -20,6 +20,8 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import io.netty.handler.ssl.SslProvider;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections.CollectionUtils;
@@ -80,6 +82,8 @@ public class PSKConfiguration {
 
     private ApplicationProtocolConfig protocolConfig = defaultProtocolConfig;
 
+    private SslProvider sslProvider = SslProvider.JDK;
+
     public void setIdentityFile(String identityFile) {
         if (StringUtils.isNotEmpty(identityFile)) {
             setIdentityFile(new File(identityFile));
@@ -117,6 +121,22 @@ public class PSKConfiguration {
     public void setCiphers(Set<String> ciphers) {
         if (CollectionUtils.isNotEmpty(ciphers)) {
             this.ciphers = ciphers;
+        }
+    }
+
+    public void setSslProvider(String sslProvider) {
+        if (StringUtils.isNotEmpty(sslProvider)) {
+            switch (sslProvider) {
+                case "JDK":
+                    this.sslProvider = SslProvider.JDK;
+                    break;
+                case "OPENSSL":
+                    this.sslProvider = SslProvider.OPENSSL;
+                    break;
+                default:
+                    throw new UnsupportedOperationException(
+                            String.format("sslProvider [%s] is not supported", sslProvider));
+            }
         }
     }
 }

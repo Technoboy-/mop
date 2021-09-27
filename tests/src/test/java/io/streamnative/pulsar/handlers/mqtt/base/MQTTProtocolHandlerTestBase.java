@@ -138,7 +138,6 @@ public abstract class MQTTProtocolHandlerTestBase {
         }
 
         String protocolHandlerDir = handlerPath.toFile().getParent();
-
         mqtt.setProtocolHandlerDirectory(
             protocolHandlerDir
         );

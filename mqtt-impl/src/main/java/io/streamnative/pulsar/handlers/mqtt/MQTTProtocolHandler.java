@@ -125,6 +125,7 @@ public class MQTTProtocolHandler implements ProtocolHandler {
             proxyConfig.setTlsPskIdentityHint(mqttConfig.getTlsPskIdentityHint());
             proxyConfig.setTlsPskIdentity(mqttConfig.getTlsPskIdentity());
             proxyConfig.setTlsPskIdentityFile(mqttConfig.getTlsPskIdentityFile());
+            proxyConfig.setTlsPskProvider(mqttConfig.getTlsPskProvider());
 
             proxyConfig.setTlsTrustStore(mqttConfig.getTlsTrustStore());
             proxyConfig.setTlsTrustCertsFilePath(mqttConfig.getTlsTrustCertsFilePath());

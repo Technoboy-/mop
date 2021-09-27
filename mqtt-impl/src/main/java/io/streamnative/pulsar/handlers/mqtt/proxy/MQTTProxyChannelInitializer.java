@@ -90,6 +90,7 @@ public class MQTTProxyChannelInitializer extends ChannelInitializer<SocketChanne
             pskConfiguration.setIdentityFile(proxyConfig.getTlsPskIdentityFile());
             pskConfiguration.setProtocols(proxyConfig.getTlsProtocols());
             pskConfiguration.setCiphers(proxyConfig.getTlsCiphers());
+            pskConfiguration.setSslProvider(proxyConfig.getTlsPskProvider());
         } else {
             this.serverSslCtxRefresher = null;
         }

@@ -23,7 +23,9 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.streamnative.pulsar.handlers.mqtt.base.MQTTTestBase;
 import io.streamnative.pulsar.handlers.mqtt.psk.PSKClient;
 import java.io.EOFException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -55,7 +57,26 @@ public class ProxyTest extends MQTTTestBase {
         mqtt.setMqttProxyEnable(true);
         mqtt.setMqttProxyTlsPskEnabled(true);
         mqtt.setTlsPskIdentityHint("alpha");
-        mqtt.setTlsPskIdentity("mqtt:mqtt123");
+        Set<String> protocols = new HashSet<>();
+        protocols.add("TLSv1");
+        protocols.add("TLSv1.1");
+//        protocols.add("TLSv1.2");
+        mqtt.setTlsProtocols(protocols);
+        Set<String> ciphers = new HashSet<>();
+        ciphers.add("TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256");
+        ciphers.add("ECDHE-PSK-AES128-CBC-SHA");
+        ciphers.add("TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA");
+        ciphers.add("TLS_PSK_WITH_AES_128_CBC_SHA");
+        ciphers.add("TLS_PSK_WITH_AES_256_CBC_SHA");
+        ciphers.add("TLS_PSK_WITH_AES_128_CBC_SHA");
+        ciphers.add("ECDHE-PSK-AES128-CBC-SHA");
+//        ciphers.add("PSK_WITH_3DES_EDE_CBC_SHA");
+//        ciphers.add("PSK_WITH_AES_128_CBC_SHA");
+//        ciphers.add("PSK_WITH_AES_256_CBC_SHA");
+        mqtt.setTlsCiphers(ciphers);
+        mqtt.setTlsPskProvider("OPENSSL");
+        mqtt.setTlsPskIdentityFile("/Users/tboy/tboy/workspace/mop/tests/src/test/resources/identityFile");
+//        mqtt.setTlsPskIdentity("mqtt:mqtt123");
         return mqtt;
     }
 
@@ -174,5 +195,12 @@ public class ProxyTest extends MQTTTestBase {
         });
         latch.await();
         Assert.assertTrue(connected.get());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testTlsPsk2() {
+        CountDownLatch latch = new CountDownLatch(1);
+        latch.await();
     }
 }

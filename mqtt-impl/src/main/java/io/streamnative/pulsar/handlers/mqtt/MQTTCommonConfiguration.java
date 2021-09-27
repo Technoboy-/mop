@@ -269,4 +269,10 @@ public class MQTTCommonConfiguration extends ServiceConfiguration {
             doc = "TLS psk identity with plain text"
     )
     private String tlsPskIdentity = null;
+
+    @FieldContext(
+            category = CATEGORY_TLS_PSK,
+            doc = "TLS psk provider"
+    )
+    private String tlsPskProvider = "JDK";
 }
