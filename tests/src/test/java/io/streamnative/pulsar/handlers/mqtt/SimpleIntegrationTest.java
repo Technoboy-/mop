@@ -589,4 +589,10 @@ public class SimpleIntegrationTest extends MQTTTestBase {
         Assert.assertEquals(new String(receive2.getPayload()), "offline");
         Assert.assertEquals(receive2.getTopic(), "will-message-topic");
     }
+
+    @Test
+    public void test2() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        latch.await();
+    }
 }

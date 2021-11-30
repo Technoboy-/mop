@@ -91,6 +91,7 @@ public class DefaultProtocolMethodProcessorImpl implements ProtocolMethodProcess
     private final MQTTMetricsCollector metricsCollector;
     private final MQTTConnectionManager connectionManager;
     private final MQTTSubscriptionManager subscriptionManager;
+    private final RetainMessageService retainMessageService;
 
     public DefaultProtocolMethodProcessorImpl (MQTTService mqttService, ChannelHandlerContext ctx) {
         this.pulsarService = mqttService.getPulsarService();
@@ -104,6 +105,7 @@ public class DefaultProtocolMethodProcessorImpl implements ProtocolMethodProcess
         this.connectionManager = mqttService.getConnectionManager();
         this.subscriptionManager = mqttService.getSubscriptionManager();
         this.serverCnx = new MQTTServerCnx(pulsarService, ctx);
+        this.retainMessageService = new RetainMessageService(pulsarService, configuration);
     }
 
     @Override
@@ -226,20 +228,24 @@ public class DefaultProtocolMethodProcessorImpl implements ProtocolMethodProcess
     private void doPublish(Channel channel, MqttPublishMessage msg) {
         final MqttQoS qos = msg.fixedHeader().qosLevel();
         metricsCollector.addSend(msg.payload().readableBytes());
-        switch (qos) {
-            case AT_MOST_ONCE:
-                this.qosPublishHandlers.qos0().publish(channel, msg);
-                break;
-            case AT_LEAST_ONCE:
-                this.qosPublishHandlers.qos1().publish(channel, msg);
-                break;
-            case EXACTLY_ONCE:
-                this.qosPublishHandlers.qos2().publish(channel, msg);
-                break;
-            default:
-                log.error("Unknown QoS-Type:{}", qos);
-                channel.close();
-                break;
+        if (retainMessageService.isRetainMessage(msg)) {
+            retainMessageService.doRetain(msg);
+        } else {
+            switch (qos) {
+                case AT_MOST_ONCE:
+                    this.qosPublishHandlers.qos0().publish(channel, msg);
+                    break;
+                case AT_LEAST_ONCE:
+                    this.qosPublishHandlers.qos1().publish(channel, msg);
+                    break;
+                case EXACTLY_ONCE:
+                    this.qosPublishHandlers.qos2().publish(channel, msg);
+                    break;
+                default:
+                    log.error("Unknown QoS-Type:{}", qos);
+                    channel.close();
+                    break;
+            }
         }
     }
 

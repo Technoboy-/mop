@@ -16,13 +16,15 @@ package io.streamnative.pulsar.handlers.mqtt.support;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import io.streamnative.pulsar.handlers.mqtt.MQTTServerConfiguration;
-import io.streamnative.pulsar.handlers.mqtt.MopVersion;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import io.streamnative.pulsar.handlers.mqtt.MopVersion;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.impl.schema.writer.JacksonJsonWriter;
