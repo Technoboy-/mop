@@ -108,10 +108,14 @@ public class MQTTProxyProtocolMethodProcessor extends AbstractCommonProtocolMeth
         final String pulsarTopicName = PulsarTopicUtils.getEncodedPulsarTopicName(msg.variableHeader().topicName(),
                 proxyConfig.getDefaultTenant(), proxyConfig.getDefaultNamespace(),
                 TopicDomain.getEnum(proxyConfig.getDefaultTopicDomain()));
-        CompletableFuture<InetSocketAddress> lookupResult = lookupHandler.findBroker(
-                TopicName.get(pulsarTopicName));
-        lookupResult
-                .thenCompose(brokerAddress -> writeToBroker(brokerAddress, pulsarTopicName, msg))
+
+        writeToBroker(pulsarTopicName, msg)
+                .thenRun(() -> {
+                    if (log.isDebugEnabled()) {
+                        log.debug("[Proxy Publish] published : {} to topic = {}, CId={}",
+                                msg, msg.variableHeader().topicName(), connection.getClientId());
+                    }
+                })
                 .exceptionally(ex -> {
                     msg.release();
                     Throwable cause = ex.getCause();
@@ -188,8 +192,7 @@ public class MQTTProxyProtocolMethodProcessor extends AbstractCommonProtocolMeth
                                 clientId, msg.payload().topicSubscriptions()));
                     }
                     List<CompletableFuture<Void>> writeToBrokerFuture =
-                            topics.stream().map(topic -> lookupHandler.findBroker(TopicName.get(topic))
-                                            .thenCompose(brokerAddress -> writeToBroker(brokerAddress, topic, msg))
+                            topics.stream().map(topic -> writeToBroker(topic, msg)
                                             .thenAccept(__ -> increaseSubscribeTopicsCount(
                                                     msg.variableHeader().messageId(), 1)))
                                     .collect(Collectors.toList());
@@ -219,20 +222,18 @@ public class MQTTProxyProtocolMethodProcessor extends AbstractCommonProtocolMeth
         List<String> topics = msg.payload().topics();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (String topic : topics) {
-            CompletableFuture<InetSocketAddress> lookupResult = lookupHandler.findBroker(TopicName.get(topic));
-            futures.add(
-                    lookupResult.thenCompose(brokerAddress -> writeToBroker(brokerAddress, topic, msg)));
+            futures.add(writeToBroker(topic, msg));
         }
         FutureUtil.waitForAll(futures)
                 .exceptionally(ex -> {
-                    log.error("[Proxy UnSubscribe] Failed to perform lookup request", ex);
+                    log.error("[Proxy UnSubscribe] Failed to perform unsubscribe request", ex);
                     channel.close();
                     return null;
         });
     }
 
-    private CompletableFuture<Void> writeToBroker(InetSocketAddress mqttBroker, String topic, MqttMessage msg) {
-        CompletableFuture<MQTTProxyExchanger> proxyExchanger = connectToBroker(mqttBroker, topic);
+    private CompletableFuture<Void> writeToBroker(String topic, MqttMessage msg) {
+        CompletableFuture<MQTTProxyExchanger> proxyExchanger = findBroker(topic);
         return proxyExchanger.thenCompose(exchanger -> writeToBroker(exchanger, msg));
     }
 
@@ -256,16 +257,18 @@ public class MQTTProxyProtocolMethodProcessor extends AbstractCommonProtocolMeth
         return result;
     }
 
-    private CompletableFuture<MQTTProxyExchanger> connectToBroker(InetSocketAddress mqttBroker, String topic) {
+    private CompletableFuture<MQTTProxyExchanger> findBroker(String topic) {
         return topicBrokers.computeIfAbsent(topic, key -> {
             CompletableFuture<MQTTProxyExchanger> future = new CompletableFuture<>();
-            try {
+            CompletableFuture<InetSocketAddress> lookupResult = lookupHandler.findBroker(TopicName.get(topic));
+            lookupResult.thenCompose(mqttBroker -> {
                 MQTTProxyExchanger result = brokerPool.computeIfAbsent(mqttBroker, addr ->
                         new MQTTProxyExchanger(this, mqttBroker, proxyConfig.getMqttMessageMaxLength()));
-                result.connectedAck().thenAccept(__ -> future.complete(result));
-            } catch (Exception ex) {
+                return result.connectedAck().thenApply(__ -> future.complete(result));
+            }).exceptionally(ex -> {
                 future.completeExceptionally(ex);
-            }
+                return null;
+            });
             return future;
         });
     }
