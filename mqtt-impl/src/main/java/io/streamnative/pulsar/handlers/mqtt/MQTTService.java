@@ -54,10 +54,14 @@ public class MQTTService {
     @Getter
     private final MQTTSubscriptionManager subscriptionManager;
 
+    @Getter
+    private final MQTTNamespaceBundleOwnershipListener bundleOwnershipListener;
+
     public MQTTService(BrokerService brokerService, MQTTServerConfiguration serverConfiguration) {
         this.brokerService = brokerService;
         this.pulsarService = brokerService.pulsar();
         this.serverConfiguration = serverConfiguration;
+        this.bundleOwnershipListener = new MQTTNamespaceBundleOwnershipListener(pulsarService.getNamespaceService());
         this.authorizationService = brokerService.getAuthorizationService();
         this.metricsCollector = new MQTTMetricsCollector(serverConfiguration);
         this.metricsProvider = new MQTTMetricsProvider(metricsCollector);
@@ -66,6 +70,6 @@ public class MQTTService {
             ? new MQTTAuthenticationService(brokerService.getAuthenticationService(),
                 serverConfiguration.getMqttAuthenticationMethods()) : null;
         this.connectionManager = new MQTTConnectionManager();
-        this.subscriptionManager = new MQTTSubscriptionManager();
+        this.subscriptionManager = new MQTTSubscriptionManager(bundleOwnershipListener, connectionManager);
     }
 }
