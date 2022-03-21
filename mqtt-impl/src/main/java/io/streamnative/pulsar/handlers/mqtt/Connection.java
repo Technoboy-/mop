@@ -241,7 +241,6 @@ public class Connection {
     public enum ConnectionState {
         DISCONNECTED,
         CONNECT_ACK,
-        FENCED,
         ESTABLISHED,
     }
 
