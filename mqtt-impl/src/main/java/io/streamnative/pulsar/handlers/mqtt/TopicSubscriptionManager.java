@@ -57,7 +57,7 @@ public class TopicSubscriptionManager {
         String subscriberName = subscriptionConsumerPair.getLeft().getName();
         try {
             removeConsumerIfExist(subscriptionConsumerPair.getLeft(), subscriptionConsumerPair.getValue());
-        } catch (BrokerServiceException e) {
+        } catch (Exception e) {
             log.error("[ Subscription ] Subscription {} Remove consumer fail.", subscriberName, e);
             FutureUtil.failedFuture(e);
         }
