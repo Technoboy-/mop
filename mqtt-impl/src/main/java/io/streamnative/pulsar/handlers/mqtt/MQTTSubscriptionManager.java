@@ -96,7 +96,6 @@ public class MQTTSubscriptionManager {
             clientIds.forEach(clientId -> {
                 Connection connection = connectionManager.getConnection(clientId);
                 if (connection != null) {
-                    connection.setFenced();
                     connection.close();
                     connectionManager.removeConnection(connection);
                 }

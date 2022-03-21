@@ -50,6 +50,7 @@ import org.apache.pulsar.client.impl.PulsarClientImpl;
 import org.apache.pulsar.common.api.proto.CommandGetTopicsOfNamespace;
 import org.apache.pulsar.common.naming.NamespaceName;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.policies.data.BundlesData;
 import org.awaitility.Awaitility;
 import org.fusesource.mqtt.client.BlockingConnection;
 import org.fusesource.mqtt.client.MQTT;
@@ -292,5 +293,37 @@ public class ProxyTest extends MQTTTestBase {
         Assert.assertEquals(new String(receive2.getPayload()), msg1);
         Assert.assertEquals(receive2.getTopic(), topicName1);
         consumer.disconnect();
+    }
+
+    @Test
+    public void testNamespaceBundleUnload() throws Exception {
+        MQTT mqttConsumer = createMQTTProxyClient();
+        BlockingConnection consumer = mqttConsumer.blockingConnection();
+        consumer.connect();
+        String topicName1 = "topic-namespace-bundle-unload-1";
+        Topic[] topic1 = { new Topic(topicName1, QoS.AT_LEAST_ONCE)};
+        consumer.subscribe(topic1);
+        MQTT mqttProducer = createMQTTProxyClient();
+        BlockingConnection producer = mqttProducer.blockingConnection();
+        producer.connect();
+        String msg1 = "hello topic1";
+        producer.publish(topicName1, msg1.getBytes(StandardCharsets.UTF_8), QoS.AT_MOST_ONCE, false);
+        Message receive1 = consumer.receive();
+        Assert.assertEquals(new String(receive1.getPayload()), msg1);
+        Assert.assertEquals(receive1.getTopic(), topicName1);
+        String namespace = "public/default";
+        BundlesData bundlesData = admin.namespaces().getBundles(namespace);
+        bundlesData.getNumBundles();
+        for (int i = 0; i < bundlesData.getBoundaries().size() - 1; i ++ ) {
+            final String bundle = String.format("%s_%s", bundlesData.getBoundaries().get(i), bundlesData.getBoundaries().get(i + 1));
+            admin.namespaces().unloadNamespaceBundle(namespace, bundle);
+        }
+        Awaitility.await().untilAsserted(() -> Assert.assertTrue(consumer.isConnected()));
+        producer.publish(topicName1, msg1.getBytes(StandardCharsets.UTF_8), QoS.AT_MOST_ONCE, false);
+        Message receive2 = consumer.receive();
+        Assert.assertEquals(new String(receive2.getPayload()), msg1);
+        Assert.assertEquals(receive2.getTopic(), topicName1);
+        consumer.disconnect();
+        producer.disconnect();
     }
 }

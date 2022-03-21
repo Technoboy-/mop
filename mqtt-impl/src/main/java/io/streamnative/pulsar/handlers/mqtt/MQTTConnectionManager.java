@@ -39,27 +39,12 @@ public class MQTTConnectionManager {
         this.connections = new ConcurrentHashMap<>(2048);
     }
 
-    public void addConnection2(Connection connection) {
-        Connection existing = connections.put(connection.getClientId(), connection);
+    public void addConnection(Connection connection) {
+        Connection existing = connections.get(connection.getClientId());
         if (existing != null) {
             if (log.isDebugEnabled()) {
                 log.debug("The clientId is existed. Close existing connection. CId={}", existing.getClientId());
             }
-            if (existing.isFenced()) {
-                log.warn("existing connection : {} is fenced. close new created connection : {}",
-                        existing, connection);
-                connections.remove(connection.getClientId());
-                connection.close();
-            } else {
-                existing.close(true);
-            }
-
-        }
-    }
-
-    public void addConnection(Connection connection) {
-        Connection existing = connections.get(connection.getClientId());
-        if (existing != null) {
             connection.close();
         }
     }

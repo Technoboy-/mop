@@ -195,14 +195,6 @@ public class Connection {
         return channelState.get(this);
     }
 
-    public boolean isFenced() {
-        return channelState.get(this) == ConnectionState.FENCED;
-    }
-
-    public void setFenced() {
-        channelState.set(this, ConnectionState.FENCED);
-    }
-
     public void updateSessionExpireInterval(int newSessionInterval) throws InvalidSessionExpireIntervalException {
        clientRestrictions.updateExpireInterval(newSessionInterval);
     }
@@ -249,7 +241,6 @@ public class Connection {
     public enum ConnectionState {
         DISCONNECTED,
         CONNECT_ACK,
-        FENCED,
         ESTABLISHED,
     }
 

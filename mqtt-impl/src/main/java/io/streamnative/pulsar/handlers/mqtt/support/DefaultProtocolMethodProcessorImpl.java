@@ -356,6 +356,7 @@ public class DefaultProtocolMethodProcessorImpl extends AbstractCommonProtocolMe
                     subTopic.topicName(), configuration.getDefaultTenant(), configuration.getDefaultNamespace(),
                     pulsarService, configuration.getDefaultTopicDomain());
             CompletableFuture<Void> completableFuture = topicListFuture.thenCompose(topics -> {
+                mqttSubscriptionManager.addSubTopics(connection.getClientId(), topics);
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
                 for (String topic : topics) {
                     CompletableFuture<Subscription> subFuture = PulsarTopicUtils
