@@ -13,7 +13,6 @@
  */
 package io.streamnative.pulsar.handlers.mqtt.mqtt3.fusesource.base;
 
-import com.hivemq.client.internal.shaded.org.jetbrains.annotations.NotNull;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
@@ -40,6 +39,8 @@ import org.fusesource.mqtt.client.QoS;
 import org.fusesource.mqtt.client.Topic;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * Basic authentication test.
